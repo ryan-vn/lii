@@ -2,15 +2,29 @@ import React, { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
 import axios from "axios";
 
+const mockItemId = 22450
+
 const EChartsComponent = () => {
   const chartRef = useRef(null);
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:3000/auction-history/14971").then((res) => {
+    axios.get(`http://localhost:3000/auction-history/${mockItemId}`).then((res) => {
       setData(res.data);
     });
   }, []);
+
+
+  const buildTooltipContent = (item) => {
+    return `
+      TSM4最后更新数据时间: ${item.scanTime}<br />
+      最低价格: ${item.minPrice / 10000}<br />
+      平均价格: ${item.avePrice / 10000}<br />
+      拍卖数量: ${item.auctionNum}<br />
+      物品数量: ${item.quantity}
+    `;
+  };
+
 
   useEffect(() => {
     if (data.length > 0) {
@@ -26,8 +40,8 @@ const EChartsComponent = () => {
 
       const myChart = echarts.init(chartRef.current);
       const scanTimes = uniqueData.map((item) => item.scanTime);
-      const minPrices = uniqueData.map((item) => item.minPrice / 1000);
-      const avePrices = uniqueData.map((item) => item.avePrice / 1000);
+      const minPrices = uniqueData.map((item) => item.minPrice / 10000);
+      const avePrices = uniqueData.map((item) => item.avePrice / 10000);
       const quantities = uniqueData.map((item) => item.quantity);
 
       const option = {
@@ -35,14 +49,10 @@ const EChartsComponent = () => {
           trigger: "axis",
           formatter: function (params) {
             const dataIndex = params[0].dataIndex;
+            console.log('dataIndex', dataIndex)
             const item = data[dataIndex];
-            return `
-              TSM4最后更新数据时间: ${item.scanTime}<br />
-              最低价格: ${item.minPrice / 1000}<br />
-              平均价格: ${item.avePrice / 1000}<br />
-              拍卖数量: ${item.auctionNum}<br />
-              物品数量: ${item.quantity}
-            `;
+            return buildTooltipContent(item);
+
           },
         },
         legend: {
@@ -79,12 +89,12 @@ const EChartsComponent = () => {
             stack: "Total",
             data: avePrices,
           },
-          {
-            name: "物品数量",
-            type: "line",
-            stack: "Total",
-            data: quantities,
-          },
+          // {
+          //   name: "物品数量",
+          //   type: "line",
+          //   stack: "Total",
+          //   data: quantities,
+          // },
         ],
       };
       myChart.setOption(option);
@@ -100,7 +110,13 @@ const EChartsComponent = () => {
     }
   }, [data]);
 
-  return <div ref={chartRef} style={{ width: "100%", height: "400px" }}></div>;
+  return (
+    <>
+      <h1>{mockItemId}</h1>
+      <div ref={chartRef} style={{ width: "100%", height: "400px" }}></div>
+    </>
+  )
+
 };
 
 export default EChartsComponent;

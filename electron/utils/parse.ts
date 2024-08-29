@@ -1,12 +1,14 @@
 
 import * as luaParser from 'luaparse';
 import fs from 'fs'
+import * as readline from 'readline';
+
 
 const baseTime = new Date(2020, 0, 1, 0).getTime();
 
 export function luaToJson(lua: string): any {
-    return luaParser.parse(lua);
-  }
+  return luaParser.parse(lua);
+}
 
 function calculateCurrentTime(result) {
   // 首先将结果乘以 86400000 转换为毫秒
@@ -69,7 +71,7 @@ function parseValue(value: any) {
     case 'TableConstructorExpression':
       // For nested table constructor expressions, handle both array-like and key-value tables
       const isKeyValueTable = value.fields.some(
-        (field:any) => field.type === 'TableKey',
+        (field: any) => field.type === 'TableKey',
       );
       if (isKeyValueTable) {
         const obj = {};
@@ -89,7 +91,7 @@ function parseValue(value: any) {
 
 const keys = ['a', 'l', 'h', 'm'];
 
-export function extractAndTransform(obj:any) {
+export function extractAndTransform(obj: any) {
   return keys.reduce((acc, key) => {
     if (key === 'm') {
       // Directly assign 'm' without transformation
@@ -105,27 +107,73 @@ export function extractAndTransform(obj:any) {
 }
 
 export async function readLuaToJson(filePath: string) {
-  if(!fs.existsSync(filePath)){
-      console.log(`Error: File ${filePath} does not exist.`);
-      return; 
+  if (!fs.existsSync(filePath)) {
+    console.log(`Error: File ${filePath} does not exist.`);
+    return;
   }
   try {
-      // 读取文件内容
-      const content = await fs.readFileSync(filePath, 'utf8');
-      // 解析 Lua 代码获取 AST
-      const ast = luaParser.parse(content);
-      // 处理 AST 并生成 JSON 对象
-      return parseLuaAST(ast); 
+    // 读取文件内容
+    const content = await fs.readFileSync(filePath, 'utf8');
+    // 解析 Lua 代码获取 AST
+    const ast = luaParser.parse(content);
+    // 处理 AST 并生成 JSON 对象
+    return parseLuaAST(ast);
   } catch (err) {
-      // 当读取文件出错时，抛出错误信息
-      if (err.code === 'ENOENT') {
-          throw new Error(`File not found: ${filePath}`);
-      } else if (err instanceof SyntaxError) {
+    // 当读取文件出错时，抛出错误信息
+    if (err.code === 'ENOENT') {
+      throw new Error(`File not found: ${filePath}`);
+    } else if (err instanceof SyntaxError) {
       // 当解析 Lua 代码出错时，抛出错误信息
-          throw new Error(`Syntax error in file: ${filePath}\n${err.message}`);
-      } else {
-          // 处理其他未知错误
-          throw new Error(`An error occurred while reading the file: ${filePath}\n${err.message}`);
-      }
+      throw new Error(`Syntax error in file: ${filePath}\n${err.message}`);
+    } else {
+      // 处理其他未知错误
+      throw new Error(`An error occurred while reading the file: ${filePath}\n${err.message}`);
+    }
   }
 }
+
+
+
+const sprt_word = 'csvAuctionDBScan';
+
+export function toDbValue(file: string): any[] {  // 从程序 中拿 到数据
+  const timeStart = Date.now();
+  const sqlCommList: any[] = [];
+
+
+  const fileContent = fs.readFileSync(file, 'utf8');
+  const lines = fileContent.split('\n');
+  for (const ret of lines) {
+    if (ret.includes(sprt_word)) {
+      const idxName = ret.indexOf("internalData@csvAuctionDBScan");
+      const subName = ret.substring(5, idxName - 1);
+      if (subName) {
+        if (ret.includes("lastScan")) {
+          const idxStart = ret.indexOf("lastScan");
+          const subStr = ret.substring(idxStart + 10, ret.length - 3);
+          const arrItems = subStr.split('\\n');
+          if (arrItems.length !== 0) {
+            console.log('Find data,use mysql to write data');
+            arrItems.forEach((tmp: string) => {
+              const sqlTmp = tmp.split(',');
+              const itemName = sqlTmp[0].split(":");
+              sqlTmp[0] = itemName[1];
+              const date = new Date(parseInt(sqlTmp[5]) * 1000);
+              const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+              sqlTmp[5] = formattedDate;  // 处理时间
+              sqlTmp.push('0');
+              sqlCommList.push(sqlTmp);
+            });
+          }
+        }
+      }
+    }
+  }
+
+  console.log('Finish read data,use mysql to write data', sqlCommList);
+
+  return sqlCommList;
+}
+
+
+

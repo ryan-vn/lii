@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell,dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, shell, dialog, ipcMain } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -7,8 +7,9 @@ import { update } from './update'
 import fs from 'fs'
 import chokidar from 'chokidar'
 import crypto from 'crypto'
-import {readLuaToJson, extractAndTransform} from '../utils/parse'
-import{spawn} from 'child_process'
+import { readLuaToJson, extractAndTransform, toDbValue } from '../utils/parse'
+import { spawn } from 'child_process'
+import axios from 'axios'
 
 const require = createRequire(import.meta.url)
 
@@ -61,7 +62,7 @@ async function autoWatchPreviouslySelectedFile() {
     // const json = j['AUCTIONATOR_PRICE_DATABASE']
 
     // console.log('time_stamp', time_stamp)
-    
+
     // Object.keys(json).forEach(i => {
     //   const server = json[i]
     //   if(typeof server === 'object'){
@@ -69,23 +70,23 @@ async function autoWatchPreviouslySelectedFile() {
     //     console.log('arr',i, arr.length)
     //   }
     // })
-    watcher.on('change', async(path) => {
+    watcher.on('change', async (path) => {
       // console.log(`File ${path} has been changed`);
-  
+
       // const j = await readLuaToJson(selectedFilePath);
 
       // const json = j['AUCTIONATOR_PRICE_DATABASE']
       // console.log('json', json)
 
-    // const p = Object.keys(json).map((i) => ({
-    //   name: i,
-    //   id: i,
-    //   data: extractAndTransform(json[i]),
-    // }));
+      // const p = Object.keys(json).map((i) => ({
+      //   name: i,
+      //   id: i,
+      //   data: extractAndTransform(json[i]),
+      // }));
 
-    // const d = {
-    //   Horde: p,
-    // };
+      // const d = {
+      //   Horde: p,
+      // };
 
       // fs.writeFileSync(DB_Path, JSON.stringify(d, null, 2), 'utf8');
       // sendFileContentToRenderer(JSON.stringify(j['AUCTIONATOR_PRICE_DATABASE']['龙牙 Horde'])); 
@@ -206,12 +207,6 @@ async function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
     webPreferences: {
       preload,
-      // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
-      // nodeIntegration: true,
-
-      // Consider using contextBridge.exposeInMainWorld
-      // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
-      // contextIsolation: false,
     },
   })
 
@@ -237,27 +232,27 @@ async function createWindow() {
 }
 
 let jsonServerProcess: any;
-app.whenReady().then(async() => {
-  await autoWatchPreviouslySelectedFile(); // 添加这一行来自动监听文件
+app.whenReady().then(async () => {
+  // await autoWatchPreviouslySelectedFile(); // 添加这一行来自动监听文件
   createWindow();
 
- try{
-  // jsonServerProcess = spawn('json-server', ['--watch', DB_Path, '--port', '3000']);
+  try {
+    // jsonServerProcess = spawn('json-server', ['--watch', DB_Path, '--port', '3000']);
 
-  // jsonServerProcess.stdout.on('data', (data) => {
-  //   console.log(`stdout: ${data}`);
-  // });
-  
-  // jsonServerProcess.stderr.on('data', (data) => {
-  //   console.error(`stderr: ${data}`);
-  // });
-  
-  // jsonServerProcess.on('close', (code) => {
-  //   console.log(`child process exited with code ${code}`);
-  // });
- }catch (error) {
-  console.log('err', error)
- }
+    // jsonServerProcess.stdout.on('data', (data) => {
+    //   console.log(`stdout: ${data}`);
+    // });
+
+    // jsonServerProcess.stderr.on('data', (data) => {
+    //   console.error(`stderr: ${data}`);
+    // });
+
+    // jsonServerProcess.on('close', (code) => {
+    //   console.log(`child process exited with code ${code}`);
+    // });
+  } catch (error) {
+    console.log('err', error)
+  }
 });
 
 app.on('window-all-closed', () => {
@@ -320,6 +315,15 @@ ipcMain.handle('open-win', (_, arg) => {
 //   });
 // })
 
+ipcMain.on('select-tsm-file', async event => {
+  const config = readConfig(); // 读取配置文件
+  const selectedFilePath = config.selectedFilePath; // 获取之前用户选择的文件路径
+  const data = toDbValue(selectedFilePath)
+  fs.writeFileSync(DB_Path, JSON.stringify(data))
+  console.log('data', DB_Path)
+})
+
+
 ipcMain.on('open-file-dialog', (event) => {
   dialog.showOpenDialog({
     properties: ['openFile'],
@@ -336,7 +340,7 @@ ipcMain.on('open-file-dialog', (event) => {
         persistent: true
       });
 
-      if(readConfig().selectedFilePath && readConfig().selectedFilePath !==result.filePaths[0]){
+      if (readConfig().selectedFilePath && readConfig().selectedFilePath !== result.filePaths[0]) {
         watcher.unwatch(readConfig().selectedFilePath);
         saveConfig({ selectedFilePath: '' });
       }

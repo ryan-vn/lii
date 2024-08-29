@@ -15,8 +15,8 @@ function App() {
     });
 
     return () => {
-      window.ipcRenderer.off('selected-file', () => {});
-      window.ipcRenderer.off('file-changed',() => {});
+      window.ipcRenderer.off('selected-file', () => { });
+      window.ipcRenderer.off('file-changed', () => { });
     };
   }, []);
 
@@ -24,10 +24,16 @@ function App() {
     window.ipcRenderer.send('open-file-dialog');
   };
 
+  const parseFile = () => {
+    window.ipcRenderer.send('select-tsm-file');
+  };
+
   return (
     <div className="App">
       <h1>File Change Listener</h1>
       <button onClick={openDialog}>Open File</button>
+
+      <button onClick={parseFile}>Parse lua</button>
       <EChartsComponent />
     </div>
   );
