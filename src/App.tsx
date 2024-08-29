@@ -1,16 +1,8 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import EChartsComponent from './components/echarts';
 
 function App() {
-  const [data, setData] = useState()
-
-
-  useEffect(()=> {
-    axios.get('http://localhost:3000/Horde?_page=2&_per_page=3').then((res) => {
-      console.log('data', res)
-      setData(res.data)
-    })
-  },[])
 
   useEffect(() => {
     window.ipcRenderer.on('selected-file', (event, path) => {
@@ -36,6 +28,7 @@ function App() {
     <div className="App">
       <h1>File Change Listener</h1>
       <button onClick={openDialog}>Open File</button>
+      <EChartsComponent />
     </div>
   );
 }

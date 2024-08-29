@@ -21,7 +21,6 @@ const configPath = path.join(userDataPath, 'config.json');
 
 const DB_Path = path.join(userDataPath, 'db.json');
 
-console.log('DB_Path', DB_Path)
 
 function calculateFileHash(filePath: string, algorithm = 'sha256') {
   return new Promise((resolve, reject) => {
@@ -43,40 +42,60 @@ let send = false
 
 async function autoWatchPreviouslySelectedFile() {
   const r = readDB()
-  setInterval(async() => {
   const config = readConfig(); // 读取配置文件
   const selectedFilePath = config.selectedFilePath; // 获取之前用户选择的文件路径
 
   // 检查文件路径是否存在
   if (selectedFilePath && fs.existsSync(selectedFilePath)) {
     // 设置chokidar监听文件变化
-      const hash = await calculateFileHash(selectedFilePath)
-      if(hash === config.fileHash && send){
-        return;
-      }
+    const config = readConfig(); // 读取配置文件
+    const selectedFilePath = config.selectedFilePath; // 获取之前用户选择的文件路径
+    const watcher = chokidar.watch(selectedFilePath, {
+      persistent: true
+    });
 
-      saveConfig({ ...config, fileHash: hash})
-      const j = await readLuaToJson(selectedFilePath);
+    // const j = await readLuaToJson(selectedFilePath);
 
-      const json = j['AUCTIONATOR_PRICE_DATABASE']['龙牙 Horde'];
+    // const time_stamp = j['AUCTIONATOR_SAVEDVARS']['TimeOfLastGetAllScan']
 
-    const p = Object.keys(json).map((i) => ({
-      name: i,
-      id: i,
-      data: extractAndTransform(json[i]),
-    }));
+    // const json = j['AUCTIONATOR_PRICE_DATABASE']
 
-    const d = {
-      Horde: p,
-    };
+    // console.log('time_stamp', time_stamp)
+    
+    // Object.keys(json).forEach(i => {
+    //   const server = json[i]
+    //   if(typeof server === 'object'){
+    //     const arr = Object.entries(server).map(([key, value]) => ({ key, price: value.m }));
+    //     console.log('arr',i, arr.length)
+    //   }
+    // })
+    watcher.on('change', async(path) => {
+      // console.log(`File ${path} has been changed`);
+  
+      // const j = await readLuaToJson(selectedFilePath);
 
-      fs.writeFileSync(DB_Path, JSON.stringify(d, null, 2), 'utf8');
+      // const json = j['AUCTIONATOR_PRICE_DATABASE']
+      // console.log('json', json)
+
+    // const p = Object.keys(json).map((i) => ({
+    //   name: i,
+    //   id: i,
+    //   data: extractAndTransform(json[i]),
+    // }));
+
+    // const d = {
+    //   Horde: p,
+    // };
+
+      // fs.writeFileSync(DB_Path, JSON.stringify(d, null, 2), 'utf8');
       // sendFileContentToRenderer(JSON.stringify(j['AUCTIONATOR_PRICE_DATABASE']['龙牙 Horde'])); 
-      send = true
+      // send = true
+
+    });
+
   } else {
     // console.log('No valid file path found in config to watch.');
   }
-  }, 10000);
 }
 
 
@@ -214,28 +233,28 @@ async function createWindow() {
     if (url.startsWith('https:')) shell.openExternal(url)
     return { action: 'deny' }
   })
-  // Auto update
   update(win)
 }
 
 let jsonServerProcess: any;
 app.whenReady().then(async() => {
-  createWindow();
   await autoWatchPreviouslySelectedFile(); // 添加这一行来自动监听文件
- try{
-  jsonServerProcess = spawn('json-server', ['--watch', DB_Path, '--port', '3000']);
+  createWindow();
 
-  jsonServerProcess.stdout.on('data', (data) => {
-    console.log(`stdout: ${data}`);
-  });
+ try{
+  // jsonServerProcess = spawn('json-server', ['--watch', DB_Path, '--port', '3000']);
+
+  // jsonServerProcess.stdout.on('data', (data) => {
+  //   console.log(`stdout: ${data}`);
+  // });
   
-  jsonServerProcess.stderr.on('data', (data) => {
-    console.error(`stderr: ${data}`);
-  });
+  // jsonServerProcess.stderr.on('data', (data) => {
+  //   console.error(`stderr: ${data}`);
+  // });
   
-  jsonServerProcess.on('close', (code) => {
-    console.log(`child process exited with code ${code}`);
-  });
+  // jsonServerProcess.on('close', (code) => {
+  //   console.log(`child process exited with code ${code}`);
+  // });
  }catch (error) {
   console.log('err', error)
  }
@@ -279,8 +298,27 @@ ipcMain.handle('open-win', (_, arg) => {
   } else {
     childWindow.loadFile(indexHtml, { hash: arg })
   }
-
 })
+
+
+// ipcMain.on('start-watch-lua-file', (event) => {
+//   const config = readConfig(); // 读取配置文件
+//   const selectedFilePath = config.selectedFilePath; // 获取之前用户选择的文件路径
+//   const watcher = chokidar.watch(selectedFilePath, {
+//     persistent: true
+//   });
+
+//   if(readConfig().selectedFilePath && readConfig().selectedFilePath !==selectedFilePath){
+//     watcher.unwatch(readConfig().selectedFilePath);
+//     saveConfig({ selectedFilePath: '' });
+//   }
+//   saveConfig({ selectedFilePath: selectedFilePath });
+
+//   watcher.on('change', (path) => {
+//     console.log(`File ${path} has been changed`);
+//     event.sender.send('file-changed', path);
+//   });
+// })
 
 ipcMain.on('open-file-dialog', (event) => {
   dialog.showOpenDialog({
@@ -294,20 +332,20 @@ ipcMain.on('open-file-dialog', (event) => {
       // 保存选中的文件路径到配置文件
 
       // 监听文件变化
-      // const watcher = chokidar.watch(result.filePaths[0], {
-      //   persistent: true
-      // });
+      const watcher = chokidar.watch(result.filePaths[0], {
+        persistent: true
+      });
 
-      // if(readConfig().selectedFilePath && readConfig().selectedFilePath !==result.filePaths[0]){
-      //   watcher.unwatch(readConfig().selectedFilePath);
-      //   saveConfig({ selectedFilePath: '' });
-      // }
-      saveConfig({ selectedFilePath: result.filePaths[0], fileHash: await calculateFileHash(result.filePaths[0]) });
+      if(readConfig().selectedFilePath && readConfig().selectedFilePath !==result.filePaths[0]){
+        watcher.unwatch(readConfig().selectedFilePath);
+        saveConfig({ selectedFilePath: '' });
+      }
+      saveConfig({ selectedFilePath: result.filePaths[0] });
 
-      // watcher.on('change', (path) => {
-      //   console.log(`File ${path} has been changed`);
-      //   event.sender.send('file-changed', path);
-      // });
+      watcher.on('change', (path) => {
+        console.log(`File ${path} has been changed`);
+        event.sender.send('file-changed', path);
+      });
     }
   }).catch(err => {
     console.log(err);
