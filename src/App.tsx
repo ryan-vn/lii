@@ -1,39 +1,52 @@
-import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import EChartsComponent from './components/echarts';
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import EChartsComponent from "./components/echarts";
+import { Button } from "antd";
 
 function App() {
-
   useEffect(() => {
-    window.ipcRenderer.on('selected-file', (event, path) => {
+    window.ipcRenderer.on("selected-file", (event, path) => {
       console.log(`Selected file: ${path}`);
     });
 
-    window.ipcRenderer.on('file-changed', (event, path) => {
+    window.ipcRenderer.on("file-changed", (event, path) => {
       console.log(`File changed: ${path}`);
       // 在这里添加处理文件变化的逻辑
     });
 
     return () => {
-      window.ipcRenderer.off('selected-file', () => { });
-      window.ipcRenderer.off('file-changed', () => { });
+      window.ipcRenderer.off("selected-file", () => {});
+      window.ipcRenderer.off("file-changed", () => {});
     };
   }, []);
 
+  const [serverList, setServerList] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:3000/region")
+      .then((res) => setServerList(res.data));
+  }, []);
+
   const openDialog = () => {
-    window.ipcRenderer.send('open-file-dialog');
+    window.ipcRenderer.send("open-file-dialog");
   };
 
   const parseFile = () => {
-    window.ipcRenderer.send('select-tsm-file');
+    window.ipcRenderer.send("select-tsm-file", { serverList });
   };
 
   return (
     <div className="App">
       <h1>File Change Listener</h1>
-      <button onClick={openDialog}>Open File</button>
 
-      <button onClick={parseFile}>Parse lua</button>
+      <Button onClick={openDialog} type="primary">
+        Open File
+      </Button>
+
+      <Button onClick={parseFile} type="primary">
+        Button
+      </Button>
       <EChartsComponent />
     </div>
   );

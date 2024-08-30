@@ -22,6 +22,8 @@ const configPath = path.join(userDataPath, 'config.json');
 
 const DB_Path = path.join(userDataPath, 'db.json');
 
+const SERVER_LIST = path.join(__dirname, 'server_list.json');
+
 
 function calculateFileHash(filePath: string, algorithm = 'sha256') {
   return new Promise((resolve, reject) => {
@@ -116,7 +118,7 @@ async function autoWatchPreviouslySelectedFile() {
 function ensureConfigExists() {
   if (!fs.existsSync(configPath)) {
     // 配置文件不存在，创建一个默认配置文件
-    saveConfig({ selectedFilePath: '', fileHash: '' });
+    saveConfig({ selectedFilePath: '', fileHash: '', serverList: '[]' });
   }
 }
 
@@ -315,12 +317,43 @@ ipcMain.handle('open-win', (_, arg) => {
 //   });
 // })
 
-ipcMain.on('select-tsm-file', async event => {
+function populationFn() {
+  const data2 = {
+    encryption: "x7tADitzZfmJkxLH2TSUALjtvIO0Na51975a4HAyBckHuWsXWf+iLsjbUFFbNCPcHxD2yEVCFaLMPekGcPJs1tI0cSqOYRT4vH1rDkhF7nyZ8bacgfX+c4QK0b8RwQZ5d3lGjCkRTadKIDVE1Usnx0FPsI4K1WMBJ+Zp9WquVwRqBtAbhe/VV5x3tDb9257G+0EaJhsGow+1VIEKCOMQokweJEmJ4F6AdVqrvCuS4WzafaSyTqUGAwsjLTjfmzWSxPiQZio33w2QWo3Kl1UjhgcJb/phz8z8fBSlrfAtO6A="
+  };
+
+  axios.post('https://bigfootserver.nga.cn/api/population/realm_faction', data2, {
+    headers: {
+      'Authorization': 'AAA eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiIxNzUuMi41Ny4xMTMiLCJhdWQiOiIxNzUuMi41Ny4xMTMiLCJpYXQiOjE3MjQ5ODE1NzQsIm5iZiI6MTcyNDk4MTU3NCwiZXhwIjoxNzI3NjU5OTc0LCJqdGkiOnsiaWQiOjkxMTcyLCJ0eXBlIjoicm91dGVfdGltZSJ9fQ.fV6jTgLfb_bzYsrAe03SKSZWyzkXU6uETxDIMz66Sjw',
+      'content-type': 'application/json',
+      'Accept-Encoding': 'gzip,compress,br,deflate',
+      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x1800323a) NetType/4G Language/zh_CN',
+      'Referer': 'https://servicewechat.com/wxa466ad77dd4b6e21/9/page-frame.html'
+    }
+  })
+  .then(response => {
+    console.log('-------')
+    console.log(response.data);
+  })
+  .catch(error => {
+    console.error(error);
+  });
+}
+
+ipcMain.on('select-tsm-file', async (event, {serverList}) => {
+  console.log('event', serverList)
   const config = readConfig(); // 读取配置文件
   const selectedFilePath = config.selectedFilePath; // 获取之前用户选择的文件路径
-  const data = toDbValue(selectedFilePath)
-  fs.writeFileSync(DB_Path, JSON.stringify(data))
-  console.log('data', DB_Path)
+  const data = toDbValue(selectedFilePath, serverList)
+  // // fs.writeFileSync(DB_Path, JSON.stringify(data))
+  try{
+    const r = await axios.post('http://localhost:3000/auction-history/patch', {
+      data: JSON.stringify(data),
+    })
+  }
+  catch (e) {
+    console.log(e)  
+  }
 })
 
 

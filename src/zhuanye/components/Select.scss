@@ -1,0 +1,100 @@
+
+.comp-select {
+    position: relative;
+    height: 30px;
+  
+    font-size: 14px;
+  
+    // &:hover {
+    //   .select-list {
+    //     display: block;
+    //   }
+    // }
+  
+    .select-title {
+      display: flex;
+      padding: 0 15px;
+      line-height: 32px;
+      height: 32px;
+  
+      color: #333;
+  
+      border-radius: 4px;
+      background-color: #fff;
+  
+      border: none;
+  
+      .prefix {
+        padding-right: 10px;
+        border-right: 1px solid #eee;
+  
+        &+p {
+          padding-left: 10px;
+        }
+      }
+  
+    }
+
+    .select-input {
+      line-height: 28px;
+      height: 28px;
+      width: 100%;
+      border: none;
+      background-color: transparent;
+    }
+  
+    .select-arrow-down {
+      position: absolute;
+      right: 5px;
+      top: 5px;
+      background-image: url(../asserts/img/arrow-down.svg);
+      width: 20px;
+      height: 20px;
+      background-size: 100%;
+    }
+  
+    .select-gap {
+      position: absolute;
+      left: 0;
+      top: 30px;
+  
+      right: 0;
+      height: 6px;
+  
+    }
+  
+    .select-list {
+      display: block;
+      min-width: 100%;
+      position: absolute;
+      left: 0;
+      top: 36px;
+      background-color: #fff;
+      z-index: 999;
+      border-radius: 4px;
+      color: #333;
+      line-height: 30px;
+      overflow: hidden;
+  
+      max-height: 420px;
+      overflow-y: auto;
+  
+      text-align: left;
+    }
+  
+    .select-list-item {
+      padding: 0 15px;
+      word-break: keep-all;
+      cursor: pointer;
+  
+      &:hover {
+        background-color: #f1f1f1;
+      }
+    }
+
+    &.select-primary {
+        .select-title,.select-list {
+            border: 1px solid #ccc;
+        }
+    }
+  }

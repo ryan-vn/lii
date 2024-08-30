@@ -1,0 +1,38 @@
+
+
+.comp-message {
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  padding: 0 40px;
+  left: 50%;
+  top: 50px;
+  min-width: 280px;
+  background-color: #fff;
+  border-radius: 4px;
+  z-index: 199;
+  color: #333;
+  transform: translateX(-50%);
+
+  letter-spacing: 1px;
+
+  // border: 1px solid transparent;
+
+  cursor: default;
+
+  &.info {
+      background-color: #0c8cfa;
+
+      color: #fff;
+  }
+
+  &.success {
+      background-color: #1dc36f;
+      color: #fff;
+  }
+
+  &.error {
+      color: #fff;
+      background-color: #ff3333;
+  }
+}

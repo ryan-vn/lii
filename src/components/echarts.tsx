@@ -1,21 +1,28 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
 import axios from "axios";
+import { useSelector, useDispatch } from "react-redux";
+import { increment, decrement } from "../store/slice/counterSlice";
+import { Button } from "antd";
 
-const mockItemId = 22450
+const mockItemId = 22450;
 
 const EChartsComponent = () => {
   const chartRef = useRef(null);
   const [data, setData] = useState([]);
+  const count = useSelector((state) => state.counter.value);
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/auction-history/${mockItemId}`).then((res) => {
-      setData(res.data);
-    });
+    axios
+      .get(`http://localhost:3000/auction-history/29/1/${mockItemId}`)
+      .then((res) => {
+        setData(res.data);
+      });
   }, []);
 
-
   const buildTooltipContent = (item) => {
+    console.log("item", item);
     return `
       TSM4最后更新数据时间: ${item.scanTime}<br />
       最低价格: ${item.minPrice / 10000}<br />
@@ -25,13 +32,13 @@ const EChartsComponent = () => {
     `;
   };
 
-
   useEffect(() => {
     if (data.length > 0) {
       const uniqueDataMap = new Map();
 
       // 遍历数据，以scanTime为键，数据点为值
       data.forEach((item) => {
+        console.log(item.scanTime);
         uniqueDataMap.set(item.scanTime, item);
       });
 
@@ -39,7 +46,17 @@ const EChartsComponent = () => {
       const uniqueData = Array.from(uniqueDataMap.values());
 
       const myChart = echarts.init(chartRef.current);
-      const scanTimes = uniqueData.map((item) => item.scanTime);
+
+      const scanTimes = uniqueData.map((data) => {
+        const date = new Date(data.scanTime);
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}-${String(date.getDate()).padStart(2, "0")} ${String(
+          date.getHours()
+        ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+      });
+
       const minPrices = uniqueData.map((item) => item.minPrice / 10000);
       const avePrices = uniqueData.map((item) => item.avePrice / 10000);
       const quantities = uniqueData.map((item) => item.quantity);
@@ -47,13 +64,6 @@ const EChartsComponent = () => {
       const option = {
         tooltip: {
           trigger: "axis",
-          formatter: function (params) {
-            const dataIndex = params[0].dataIndex;
-            console.log('dataIndex', dataIndex)
-            const item = data[dataIndex];
-            return buildTooltipContent(item);
-
-          },
         },
         legend: {
           data: ["最小价格", "平均价格", "物品数量"],
@@ -69,7 +79,10 @@ const EChartsComponent = () => {
           data: scanTimes,
           axisLabel: {
             formatter: function (value) {
-              return echarts.format.formatTime("MM-dd hh:mm", new Date(value));
+              return echarts.format.formatTime(
+                "yyyy-MM-dd hh:mm",
+                new Date(value)
+              );
             },
           },
         },
@@ -113,10 +126,11 @@ const EChartsComponent = () => {
   return (
     <>
       <h1>{mockItemId}</h1>
+      <div>{count}</div>
+      <Button onClick={() => dispatch(increment())}>+</Button>
       <div ref={chartRef} style={{ width: "100%", height: "400px" }}></div>
     </>
-  )
-
+  );
 };
 
 export default EChartsComponent;
