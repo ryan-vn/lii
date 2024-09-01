@@ -164,7 +164,7 @@ export function toDbValue(file: string, serverList: { id: number, name: string, 
   cacheServerKey: string[]
 } {  // 从程序 中拿 到数据
   const hashStore = store.get('hash')
-  console.log("开始处理文件", hashStore);
+  console.log("cache keys", hashStore);
   const timeStart = Date.now();
   const sqlCommList: any[] = [];
   const hashList = []
@@ -198,7 +198,7 @@ export function toDbValue(file: string, serverList: { id: number, name: string, 
               const formattedDate = moment.unix(sqlTmp[5]).format('YYYY-MM-DD HH:mm:ss'); // Process time
               sqlTmp[5] = formattedDate;  // 处理时间
               sqlTmp.push('0');
-              cacheServerKey.add(`${regionName}_${FACTION[fac]}`)
+              cacheServerKey.add(region + '_' + fac)
               sqlTmp.push(regionName);
               sqlTmp.push(FACTION[fac]);
               sqlCommList.push(sqlTmp);
