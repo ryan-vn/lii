@@ -3,6 +3,8 @@ import * as luaParser from 'luaparse';
 import fs from 'fs'
 import * as readline from 'readline';
 import moment from 'moment';
+import crypto from 'crypto'
+import { store } from './store';
 
 const FACTION = {
   Horde: 1,
@@ -142,7 +144,7 @@ function extractKeywords(str: string) {
   const matches = str.match(regex);
   if (matches && matches.length >= 3) {
     // matches[1] 是第一个关键词，matches[2] 是第二个关键词
-    return [matches[1],  matches[2] ];
+    return [matches[1], matches[2]];
   }
   return [];
 }
@@ -151,24 +153,39 @@ function extractKeywords(str: string) {
 const sprt_word = 'csvAuctionDBScan';
 
 
-function getIdByName(name: string, data: {id: number, name: string}[]) {
+function getIdByName(name: string, data: { id: number, name: string }[]) {
   const item = data.find(item => item.name === name);
   return item ? item.id : '';
 }
 
-export function toDbValue(file: string, serverList: {id: number, name: string}[]): any[] {  // 从程序 中拿 到数据
+export function toDbValue(file: string, serverList: { id: number, name: string, }[],): {
+  data: any[];
+  hashList: string[];
+  cacheServerKey: string[]
+} {  // 从程序 中拿 到数据
+  const hashStore = store.get('hash')
+  console.log("开始处理文件", hashStore);
   const timeStart = Date.now();
   const sqlCommList: any[] = [];
+  const hashList = []
   const fileContent = fs.readFileSync(file, 'utf8');
   const lines = fileContent.split('\n');
+  const cacheServerKey = new Set()
   for (const ret of lines) {
     if (ret.includes(sprt_word)) {
+      const hash = crypto.createHash('sha256').update(ret).digest('hex');
+      if (hashStore.indexOf(hash) !== -1) {
+        console.log('Find alread data,skip');
+        continue
+      }
       const idxName = ret.indexOf("internalData@csvAuctionDBScan");
       const subName = ret.substring(5, idxName - 1);
       if (subName) {
-        const [fac,region] = extractKeywords(ret)
-        console.log('fa', fac, region)
+        const [fac, region] = extractKeywords(ret)
         if (ret.includes("lastScan")) {
+          hashList.push(hash)
+          const regionName = getIdByName(region, serverList)
+          console.log('有新的拍卖行数据更新', regionName, fac);
           const idxStart = ret.indexOf("lastScan");
           const subStr = ret.substring(idxStart + 10, ret.length - 3);
           const arrItems = subStr.split('\\n');
@@ -178,11 +195,11 @@ export function toDbValue(file: string, serverList: {id: number, name: string}[]
               const sqlTmp = tmp.split(',');
               const itemName = sqlTmp[0].split(":");
               sqlTmp[0] = itemName[1];
-              const date = new Date(parseInt(sqlTmp[5]) * 1000);
-              const formattedDate =  moment.unix(sqlTmp[5]).format('YYYY-MM-DD HH:mm:ss'); // Process time
+              const formattedDate = moment.unix(sqlTmp[5]).format('YYYY-MM-DD HH:mm:ss'); // Process time
               sqlTmp[5] = formattedDate;  // 处理时间
               sqlTmp.push('0');
-              sqlTmp.push(getIdByName(region, serverList));
+              cacheServerKey.add(`${regionName}_${FACTION[fac]}`)
+              sqlTmp.push(regionName);
               sqlTmp.push(FACTION[fac]);
               sqlCommList.push(sqlTmp);
             });
@@ -192,7 +209,11 @@ export function toDbValue(file: string, serverList: {id: number, name: string}[]
     }
   }
 
-  return sqlCommList;
+  return {
+    data: sqlCommList,
+    hashList: hashList,
+    cacheServerKey: Array.from(cacheServerKey) as string[]
+  };
 }
 
 

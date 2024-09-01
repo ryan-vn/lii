@@ -10,6 +10,7 @@ import crypto from 'crypto'
 import { readLuaToJson, extractAndTransform, toDbValue } from '../utils/parse'
 import { spawn } from 'child_process'
 import axios from 'axios'
+import { store } from '../utils/store'
 
 const require = createRequire(import.meta.url)
 
@@ -331,28 +332,39 @@ function populationFn() {
       'Referer': 'https://servicewechat.com/wxa466ad77dd4b6e21/9/page-frame.html'
     }
   })
-  .then(response => {
-    console.log('-------')
-    console.log(response.data);
-  })
-  .catch(error => {
-    console.error(error);
-  });
+    .then(response => {
+      console.log('-------')
+      console.log(response.data);
+    })
+    .catch(error => {
+      console.error(error);
+    });
 }
 
-ipcMain.on('select-tsm-file', async (event, {serverList}) => {
-  console.log('event', serverList)
-  const config = readConfig(); // 读取配置文件
-  const selectedFilePath = config.selectedFilePath; // 获取之前用户选择的文件路径
-  const data = toDbValue(selectedFilePath, serverList)
-  // // fs.writeFileSync(DB_Path, JSON.stringify(data))
-  try{
+let isPost = false
+
+ipcMain.on('select-tsm-file', async (event, { serverList }) => {
+  try {
+    if (isPost) return
+    isPost = true
+    const config = readConfig(); // 读取配置文件
+    const selectedFilePath = config.selectedFilePath; // 获取之前用户选择的文件路径
+    const { data, hashList, cacheServerKey } = toDbValue(selectedFilePath, serverList)
+    // // fs.writeFileSync(DB_Path, JSON.stringify(data))
+    if (!data.length) return
     const r = await axios.post('http://localhost:3000/auction-history/patch', {
       data: JSON.stringify(data),
+      cacheServerKey
     })
+    console.log('保存数据成功')
+    const hash = store.get('hash')
+    store.set('hash', [...hash, ...hashList])
   }
   catch (e) {
-    console.log(e)  
+    console.log(e)
+  }
+  finally {
+    isPost = false
   }
 })
 

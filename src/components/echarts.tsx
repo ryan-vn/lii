@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { increment, decrement } from "../store/slice/counterSlice";
 import { Button } from "antd";
 
-const mockItemId = 22450;
+const mockItemId = 43102;
 
 const EChartsComponent = () => {
   const chartRef = useRef(null);
