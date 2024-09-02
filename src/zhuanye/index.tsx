@@ -1583,19 +1583,17 @@ const App = () => {
   };
 
   const handleWCLBoxClick = () => {
-    fetch(`https://wowpro.oss-cn-shanghai.aliyuncs.com/usebox`, {
-      method: "HEAD",
-    }).catch((error) => console.error("请求失败:", error));
-
-    // 创建一个a标签，用于触发下载
-    const link = document.createElement("a");
-    link.href = "https://cdn2.newbeebox.com/installer/NewBeeBoxSetup_WPCC.exe"; // 替换成你的文件路径
-    link.download = "NewBeeBoxSetup_WPCC.exe"; // 替换成你的文件名和扩展名
-
-    // 模拟点击a标签，触发下载
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // fetch(`https://wowpro.oss-cn-shanghai.aliyuncs.com/usebox`, {
+    //   method: "HEAD",
+    // }).catch((error) => console.error("请求失败:", error));
+    // // 创建一个a标签，用于触发下载
+    // const link = document.createElement("a");
+    // link.href = "https://cdn2.newbeebox.com/installer/NewBeeBoxSetup_WPCC.exe"; // 替换成你的文件路径
+    // link.download = "NewBeeBoxSetup_WPCC.exe"; // 替换成你的文件名和扩展名
+    // // 模拟点击a标签，触发下载
+    // document.body.appendChild(link);
+    // link.click();
+    // document.body.removeChild(link);
   };
 
   const getReagentPrice = (reagent, pure, safe) => {

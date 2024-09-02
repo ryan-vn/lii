@@ -1,9 +1,11 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import EChartsComponent from "./components/echarts";
+import EChartsComponent from "../components/echarts";
 import { Button } from "antd";
+import { useNavigate } from "react-router-dom";
 
 function App() {
+  const navigate = useNavigate();
   useEffect(() => {
     window.ipcRenderer.on("selected-file", (event, path) => {
       console.log(`Selected file: ${path}`);
@@ -39,6 +41,15 @@ function App() {
   return (
     <div className="App">
       <h1>File Change Listener</h1>
+
+      <Button
+        onClick={() => {
+          navigate("login");
+        }}
+        type="primary"
+      >
+        login
+      </Button>
 
       <Button onClick={openDialog} type="primary">
         Open File
